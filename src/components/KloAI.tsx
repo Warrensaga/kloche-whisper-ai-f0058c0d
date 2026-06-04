@@ -46,7 +46,8 @@ export function KloAI() {
     const nextStep = order[idx + 1];
 
     if (nextStep) {
-      setTimeout(() => push({ from: "ai", text: prompts[nextStep] }), 450);
+      const promptText = prompts[nextStep as Exclude<Step, "sending" | "done">];
+      setTimeout(() => push({ from: "ai", text: promptText }), 450);
       setStep(nextStep);
     } else {
       setStep("sending");
