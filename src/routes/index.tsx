@@ -1,29 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
+import Landing from "@/components/Landing";
+import { KloAI } from "@/components/KloAI";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Kloche Interiors — Luxury Interior Design in Nairobi & Westlands Fit-Outs" },
+      {
+        name: "description",
+        content:
+          "Kloche Interiors is a Nairobi atelier curating luxury interior design and premium office fit-outs in Westlands, Karen, Kilimani and beyond.",
+      },
+      { property: "og:title", content: "Kloche Interiors — Luxury Interior Design in Nairobi" },
+      {
+        property: "og:description",
+        content:
+          "Turnkey luxury interiors and commercial fit-outs from our Westlands atelier on Karuna Road.",
+      },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      <Landing />
+      <KloAI />
+    </>
   );
 }
