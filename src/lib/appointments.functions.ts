@@ -42,9 +42,11 @@ export const updateAppointment = createServerFn({ method: "POST" })
   .inputValidator((input) => updateAppointmentSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { id, clientId, clientName, ...rest } = data;
-    const patch: Record<string, unknown> = { ...rest };
-    if (clientId !== undefined) patch.client_id = clientId;
-    if (clientName !== undefined) patch.client_name = clientName;
+    const patch = {
+      ...rest,
+      ...(clientId !== undefined ? { client_id: clientId } : {}),
+      ...(clientName !== undefined ? { client_name: clientName } : {}),
+    };
     const { error } = await context.supabase.from("appointments").update(patch).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
