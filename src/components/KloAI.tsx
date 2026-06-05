@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Sparkles, Check, AlertCircle, Loader2, Phone as PhoneIcon } from "lucide-react";
-
-// TODO: Replace with the live Make.com webhook URL
-const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/your-webhook-id";
+import { submitEnquiry } from "@/lib/enquiries.functions";
 
 type Msg = { from: "ai" | "user" | "system"; text: string };
 type Step = "type" | "location" | "name" | "phone" | "sending" | "error" | "done";
@@ -74,28 +72,19 @@ export function KloAI() {
 
   async function sendToWebhook(payload: typeof data): Promise<boolean> {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
-      const res = await fetch(MAKE_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        mode: "no-cors",
-        signal: controller.signal,
-        body: JSON.stringify({
+      const phone = normalizePhone(payload.phone);
+      await submitEnquiry({
+        data: {
           name: payload.name,
-          phone: normalizePhone(payload.phone),
-          project: payload.project,
-          location: payload.location,
-          source: "Kloche Interiors — Klo-AI",
-          timestamp: new Date().toISOString(),
-        }),
+          phone,
+          service: "Interior Design",
+          message: `Project type: ${payload.project}\nLocation: ${payload.location}\nSubmitted via Klo-AI consultant.`,
+          source: "Klo-AI",
+        },
       });
-      clearTimeout(timeout);
-      // With mode: 'no-cors', response is opaque (status 0). Treat reaching the
-      // network without throwing as success.
-      return res.type === "opaque" || res.ok;
+      return true;
     } catch (e) {
-      console.error("Klo-AI webhook error:", e);
+      console.error("Klo-AI submit error:", e);
       return false;
     }
   }
