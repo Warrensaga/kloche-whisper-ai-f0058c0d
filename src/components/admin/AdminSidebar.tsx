@@ -10,12 +10,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
-const nav = [
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+const nav: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/clients", label: "Clients", icon: Users },
   { to: "/admin/appointments", label: "Appointments", icon: Calendar },
   { to: "/admin/enquiries", label: "Enquiries", icon: MessageSquare },
-] as const;
+];
 
 export function AdminSidebar() {
   const location = useLocation();
