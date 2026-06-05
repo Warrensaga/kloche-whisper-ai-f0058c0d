@@ -50,7 +50,7 @@ export function AdminSidebar() {
           return (
             <Link
               key={item.to}
-              to={item.to}
+              to={item.to as "/admin"}
               className={`flex items-center gap-3 px-4 py-2.5 text-sm rounded-sm transition-colors relative ${
                 active
                   ? "bg-bone/5 text-bone border-l-2 border-gold"
