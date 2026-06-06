@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Landing from "@/components/Landing";
 import { KloAI } from "@/components/KloAI";
+import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 
 const TITLE = "Kloche Interiors — Luxury Interior Design in Nairobi & Westlands Fit-Outs";
 const DESCRIPTION =
@@ -133,6 +134,7 @@ function Index() {
     <>
       <Landing />
       <KloAI />
+      <WhatsAppFloat />
     </>
   );
 }
