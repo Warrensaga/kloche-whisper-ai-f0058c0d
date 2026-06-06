@@ -1,146 +1,72 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Sparkles, Check, AlertCircle, Loader2, Phone as PhoneIcon } from "lucide-react";
-import { submitEnquiry } from "@/lib/enquiries.functions";
+import { chatWithKloAI } from "@/lib/chat.functions";
 
-type Msg = { from: "ai" | "user" | "system"; text: string };
-type Step = "type" | "location" | "name" | "phone" | "sending" | "error" | "done";
+type Msg = { from: "ai" | "user"; text: string };
 
-const prompts: Record<Exclude<Step, "sending" | "error" | "done">, string> = {
-  type: "Welcome to Kloche Interiors. We specialize in curating luxury interior design and premium office fit-outs here in Nairobi. Are you looking to transform a residential home or a commercial business space today?",
-  location: "Wonderful. Where is the property located? (e.g. Karen, Westlands, Kilimani)",
-  name: "Delighted. May I have your name so our principal designer can address you personally?",
-  phone: "Thank you. Lastly, your WhatsApp number — we'll reach out within one business day.",
-};
-
-// Validation helpers
-function validateField(step: Step, value: string): string | null {
-  const v = value.trim();
-  if (!v) return "Please enter a response to continue.";
-  if (v.length > 200) return "Please keep your response under 200 characters.";
-
-  if (step === "type") {
-    if (v.length < 3) return "Could you share a little more detail?";
-  }
-  if (step === "location") {
-    if (v.length < 2) return "Please share the area or neighbourhood.";
-  }
-  if (step === "name") {
-    if (v.length < 2) return "Please share your full name.";
-    if (!/^[a-zA-Z\u00C0-\u017F'’.\-\s]+$/.test(v)) return "Names should only contain letters.";
-  }
-  if (step === "phone") {
-    const digits = v.replace(/[^\d]/g, "");
-    if (digits.length < 9 || digits.length > 15) {
-      return "Please enter a valid WhatsApp number (9–15 digits).";
-    }
-    if (!/^\+?[\d\s\-()]+$/.test(v)) {
-      return "Use digits, spaces, +, -, or () only.";
-    }
-  }
-  return null;
-}
-
-function normalizePhone(raw: string): string {
-  const trimmed = raw.trim().replace(/[\s\-()]/g, "");
-  if (trimmed.startsWith("+")) return trimmed;
-  if (trimmed.startsWith("0")) return "+254" + trimmed.slice(1);
-  if (trimmed.startsWith("254")) return "+" + trimmed;
-  return trimmed;
-}
+const GREETING =
+  "Welcome to Kloche Interiors. I'm Klo-AI, your design consultant. Are you reimagining a home or a commercial space today?";
 
 export function KloAI() {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>("type");
   const [input, setInput] = useState("");
-  const [fieldError, setFieldError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [data, setData] = useState({ project: "", location: "", name: "", phone: "" });
-  const [messages, setMessages] = useState<Msg[]>([{ from: "ai", text: prompts.type }]);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [messages, setMessages] = useState<Msg[]>([{ from: "ai", text: GREETING }]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, step]);
+  }, [messages, sending]);
 
-  // Clear field error as the user edits
   useEffect(() => {
-    if (fieldError) setFieldError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input]);
+    if (open) setTimeout(() => inputRef.current?.focus(), 100);
+  }, [open, sending]);
 
-  const push = (m: Msg) => setMessages((p) => [...p, m]);
+  async function send() {
+    const value = input.trim();
+    if (!value || sending) return;
+    setError(null);
+    const nextMessages: Msg[] = [...messages, { from: "user", text: value }];
+    setMessages(nextMessages);
+    setInput("");
+    setSending(true);
 
-  async function sendToWebhook(payload: typeof data): Promise<boolean> {
     try {
-      const phone = normalizePhone(payload.phone);
-      await submitEnquiry({
-        data: {
-          name: payload.name,
-          phone,
-          service: "Interior Design",
-          message: `Project type: ${payload.project}\nLocation: ${payload.location}\nSubmitted via Klo-AI consultant.`,
-          source: "Klo-AI",
-        },
-      });
-      return true;
+      const history = nextMessages.map((m) => ({
+        role: m.from === "ai" ? ("assistant" as const) : ("user" as const),
+        content: m.text,
+      }));
+      const result = await chatWithKloAI({ data: { messages: history } });
+      setMessages((p) => [...p, { from: "ai", text: result.text }]);
+      if (result.submitted) setSubmitted(true);
     } catch (e) {
-      console.error("Klo-AI submit error:", e);
-      return false;
-    }
-  }
-
-  async function finalize(payload: typeof data) {
-    setStep("sending");
-    push({ from: "system", text: "Securing your consultation request…" });
-    const ok = await sendToWebhook(payload);
-    if (ok) {
-      setStep("done");
-    } else {
-      setRetryCount((c) => c + 1);
-      setStep("error");
+      console.error(e);
+      setError("We couldn't reach the atelier. Please try again or message us on WhatsApp.");
+    } finally {
+      setSending(false);
     }
   }
 
   function retry() {
-    finalize(data);
-  }
-
-  async function submit() {
-    if (step === "sending" || step === "done") return;
-
-    const value = input.trim();
-    const err = validateField(step, value);
-    if (err) {
-      setFieldError(err);
-      return;
-    }
-
-    push({ from: "user", text: value });
-    setInput("");
-
-    const next = { ...data };
-    if (step === "type") next.project = value;
-    if (step === "location") next.location = value;
-    if (step === "name") next.name = value;
-    if (step === "phone") next.phone = value;
-    setData(next);
-
-    const order: Step[] = ["type", "location", "name", "phone"];
-    const idx = order.indexOf(step);
-    const nextStep = order[idx + 1];
-
-    if (nextStep) {
-      const promptText = prompts[nextStep as Exclude<Step, "sending" | "error" | "done">];
-      setTimeout(() => push({ from: "ai", text: promptText }), 450);
-      setStep(nextStep);
-    } else {
-      await finalize(next);
+    setError(null);
+    // Re-send last user message
+    const lastUser = [...messages].reverse().find((m) => m.from === "user");
+    if (lastUser) {
+      setInput(lastUser.text);
+      setMessages((p) => {
+        const idx = [...p].reverse().findIndex((m) => m.from === "user");
+        if (idx === -1) return p;
+        const realIdx = p.length - 1 - idx;
+        return p.slice(0, realIdx);
+      });
     }
   }
 
   return (
     <>
-      {/* Floating bubble */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -154,7 +80,6 @@ export function KloAI() {
         </button>
       )}
 
-      {/* Chat panel */}
       {open && (
         <div
           role="dialog"
@@ -169,7 +94,7 @@ export function KloAI() {
               <div>
                 <p className="font-display text-lg leading-none">Klo-AI</p>
                 <p className="text-[11px] tracking-[0.2em] uppercase text-gold-soft mt-1">
-                  {step === "sending" ? "Sending…" : step === "error" ? "Connection issue" : "Design Consultant"}
+                  {sending ? "Thinking…" : submitted ? "Request received" : "Design Consultant"}
                 </p>
               </div>
             </div>
@@ -183,32 +108,21 @@ export function KloAI() {
             aria-live="polite"
             className="h-[380px] overflow-y-auto px-4 py-5 space-y-3 bg-background"
           >
-            {messages.map((m, i) => {
-              if (m.from === "system") {
-                return (
-                  <div key={i} className="flex justify-center">
-                    <p className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground inline-flex items-center gap-2">
-                      <Loader2 className="size-3 animate-spin" /> {m.text}
-                    </p>
-                  </div>
-                );
-              }
-              return (
-                <div key={i} className={m.from === "ai" ? "flex" : "flex justify-end"}>
-                  <div
-                    className={
-                      m.from === "ai"
-                        ? "max-w-[85%] text-sm leading-relaxed text-foreground bg-muted/60 px-4 py-3 rounded-lg rounded-bl-sm"
-                        : "max-w-[85%] text-sm leading-relaxed bg-ink text-bone px-4 py-3 rounded-lg rounded-br-sm"
-                    }
-                  >
-                    {m.text}
-                  </div>
+            {messages.map((m, i) => (
+              <div key={i} className={m.from === "ai" ? "flex" : "flex justify-end"}>
+                <div
+                  className={
+                    m.from === "ai"
+                      ? "max-w-[85%] text-sm leading-relaxed text-foreground bg-muted/60 px-4 py-3 rounded-lg rounded-bl-sm whitespace-pre-wrap"
+                      : "max-w-[85%] text-sm leading-relaxed bg-ink text-bone px-4 py-3 rounded-lg rounded-br-sm whitespace-pre-wrap"
+                  }
+                >
+                  {m.text}
                 </div>
-              );
-            })}
+              </div>
+            ))}
 
-            {step === "sending" && (
+            {sending && (
               <div className="flex">
                 <div className="bg-muted/60 px-4 py-3 rounded-lg rounded-bl-sm inline-flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="size-1.5 rounded-full bg-gold animate-pulse" />
@@ -218,20 +132,13 @@ export function KloAI() {
               </div>
             )}
 
-            {step === "error" && (
-              <div className="mt-2 border border-destructive/40 bg-destructive/5 rounded-lg p-5 animate-fade-up">
+            {error && (
+              <div className="mt-2 border border-destructive/40 bg-destructive/5 rounded-lg p-4 animate-fade-up">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="size-5 text-destructive shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-display text-lg text-foreground leading-tight">
-                      We couldn't reach our atelier
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                      {retryCount > 1
-                        ? "Still no luck. Please try once more or message us directly on WhatsApp."
-                        : "It might be a momentary network issue. Please try again."}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <p className="text-sm text-foreground">{error}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         onClick={retry}
                         className="inline-flex items-center gap-2 bg-ink text-bone text-[11px] tracking-[0.2em] uppercase px-4 py-2.5 rounded-sm hover:bg-gold hover:text-ink transition-colors"
@@ -252,56 +159,42 @@ export function KloAI() {
               </div>
             )}
 
-            {step === "done" && (
-              <div className="mt-4 border border-gold/40 bg-gold/10 rounded-lg p-5 text-center animate-fade-up">
-                <span className="inline-grid place-items-center size-10 rounded-full bg-gold text-ink mb-3">
-                  <Check className="size-5" />
+            {submitted && (
+              <div className="mt-2 border border-gold/40 bg-gold/10 rounded-lg p-4 text-center animate-fade-up">
+                <span className="inline-grid place-items-center size-9 rounded-full bg-gold text-ink mb-2">
+                  <Check className="size-4" />
                 </span>
-                <p className="font-display text-xl text-foreground">
-                  Thank you{data.name ? `, ${data.name.split(" ")[0]}` : ""}.
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                  Your consultation request has been received. Our principal designer will reach you on WhatsApp shortly.
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Your consultation request has been saved. Our principal designer will reach you on WhatsApp shortly.
                 </p>
               </div>
             )}
           </div>
 
-          {step !== "done" && step !== "error" && (
-            <form
-              onSubmit={(e) => { e.preventDefault(); submit(); }}
-              className="border-t border-border bg-card"
-            >
-              {fieldError && (
-                <p className="px-4 pt-2 text-[11px] text-destructive flex items-center gap-1.5">
-                  <AlertCircle className="size-3" /> {fieldError}
-                </p>
-              )}
-              <div className="flex items-center gap-2 px-3 py-3">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  disabled={step === "sending"}
-                  inputMode={step === "phone" ? "tel" : "text"}
-                  autoComplete={step === "phone" ? "tel" : step === "name" ? "name" : "off"}
-                  maxLength={step === "phone" ? 20 : 200}
-                  placeholder={step === "phone" ? "+254 7XX XXX XXX" : "Type your reply…"}
-                  aria-invalid={!!fieldError}
-                  className={`flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground ${
-                    fieldError ? "text-destructive" : ""
-                  }`}
-                />
-                <button
-                  type="submit"
-                  disabled={step === "sending" || !input.trim()}
-                  className="grid place-items-center size-9 rounded-full bg-ink text-bone disabled:opacity-40 hover:bg-gold hover:text-ink transition-colors"
-                  aria-label="Send"
-                >
-                  {step === "sending" ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                </button>
-              </div>
-            </form>
-          )}
+          <form
+            onSubmit={(e) => { e.preventDefault(); send(); }}
+            className="border-t border-border bg-card"
+          >
+            <div className="flex items-center gap-2 px-3 py-3">
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={sending}
+                maxLength={2000}
+                placeholder="Type your message…"
+                className="flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground"
+              />
+              <button
+                type="submit"
+                disabled={sending || !input.trim()}
+                className="grid place-items-center size-9 rounded-full bg-ink text-bone disabled:opacity-40 hover:bg-gold hover:text-ink transition-colors"
+                aria-label="Send"
+              >
+                {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </>
