@@ -1,8 +1,8 @@
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import type { EventInput } from "@fullcalendar/core";
+import interactionPlugin, { type DateClickArg } from "@fullcalendar/interaction";
+import type { EventInput, EventClickArg } from "@fullcalendar/core";
 
 type Props = {
   events: EventInput[];
@@ -22,8 +22,8 @@ export default function AppointmentCalendar({ events, onDateClick, onEventClick 
       }}
       height="auto"
       events={events}
-      dateClick={(info) => onDateClick(info.date)}
-      eventClick={(info) => {
+      dateClick={(info: DateClickArg) => onDateClick(info.date)}
+      eventClick={(info: EventClickArg) => {
         info.jsEvent.preventDefault();
         onEventClick(info.event.id);
       }}
