@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { ArrowUpRight, MapPin, Instagram, Sofa, Building2, Compass, Phone } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import westlandsImg from "@/assets/project-westlands.jpg";
@@ -8,24 +7,13 @@ import karenImg from "@/assets/project-karen.jpg";
 const WHATSAPP = "https://wa.me/254717634003";
 
 function Nav() {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
   const links = [
     { href: "#projects", label: "Projects" },
     { href: "#services", label: "Services" },
     { href: "#about", label: "About" },
   ];
   return (
-    <header
-      className={`fixed top-0 inset-x-0 z-40 transition-all duration-500 ${
-        scrolled ? "backdrop-blur-md bg-background/70 border-b border-border/60" : "bg-transparent"
-      }`}
-    >
+    <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container-luxe flex items-center justify-between h-20">
         <a href="#top" className="flex items-baseline gap-2 group">
           <span className="font-display text-2xl tracking-tight">Kloche</span>
@@ -77,8 +65,8 @@ function Hero() {
           <span className="text-bone/80">& Premium Office Fit-Outs in Westlands.</span>
         </h1>
         <p className="mt-8 max-w-xl text-base sm:text-lg text-bone/70 leading-relaxed">
-          A turnkey atelier curating residential sanctuaries and commercial environments
-          for Nairobi's most discerning clients and developers.
+          A turnkey atelier curating residential sanctuaries and commercial environments for
+          Nairobi's most discerning clients and developers.
         </p>
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <a
@@ -129,7 +117,8 @@ function Projects() {
           <div className="max-w-2xl">
             <p className="eyebrow mb-4">Signature Projects</p>
             <h2 className="font-display text-4xl sm:text-6xl leading-[1]">
-              A portfolio shaped by <em className="not-italic text-gold">restraint</em>, material honesty, and a love of light.
+              A portfolio shaped by <em className="not-italic text-gold">restraint</em>, material
+              honesty, and a love of light.
             </h2>
           </div>
           <div className="hairline md:w-32" />
@@ -194,7 +183,8 @@ function Services() {
         <div className="max-w-2xl mb-16">
           <p className="eyebrow mb-4">The Atelier</p>
           <h2 className="font-display text-4xl sm:text-6xl leading-[1.05]">
-            Three disciplines. One <em className="not-italic text-gold">uncompromising</em> standard.
+            Three disciplines. One <em className="not-italic text-gold">uncompromising</em>{" "}
+            standard.
           </h2>
         </div>
 
@@ -204,7 +194,10 @@ function Services() {
               key={s.title}
               className="group relative bg-ink p-8 sm:p-10 min-h-[300px] flex flex-col justify-between hover:bg-bone hover:text-ink transition-colors duration-500"
             >
-              <s.icon className="size-8 text-gold group-hover:text-ink transition-colors" strokeWidth={1.25} />
+              <s.icon
+                className="size-8 text-gold group-hover:text-ink transition-colors"
+                strokeWidth={1.25}
+              />
               <div>
                 <h3 className="font-display text-2xl sm:text-3xl mb-3">{s.title}</h3>
                 <p className="text-sm leading-relaxed text-bone/70 group-hover:text-ink/70 transition-colors">
@@ -227,18 +220,20 @@ function About() {
         <div className="lg:col-span-5">
           <p className="eyebrow mb-4">About Kloche</p>
           <h2 className="font-display text-4xl sm:text-5xl leading-[1.05]">
-            Designed in Westlands. Built for those who notice the <em className="not-italic text-gold">details</em>.
+            Designed in Westlands. Built for those who notice the{" "}
+            <em className="not-italic text-gold">details</em>.
           </h2>
         </div>
         <div className="lg:col-span-6 lg:col-start-7 space-y-6 text-foreground/80 leading-relaxed">
           <p>
-            Kloche Interiors is a Nairobi-based design and fit-out atelier serving affluent residential
-            clients and discerning commercial developers. We curate spaces that feel inevitable —
-            quiet, considered and crafted from honest materials.
+            Kloche Interiors is a Nairobi-based design and fit-out atelier serving affluent
+            residential clients and discerning commercial developers. We curate spaces that feel
+            inevitable — quiet, considered and crafted from honest materials.
           </p>
           <p>
-            From a private residence in Karen to a fintech headquarters in Kilimani, every commission
-            is led by a principal designer and delivered turnkey by a single accountable team.
+            From a private residence in Karen to a fintech headquarters in Kilimani, every
+            commission is led by a principal designer and delivered turnkey by a single accountable
+            team.
           </p>
           <div className="hairline w-24 my-8" />
           <div className="grid grid-cols-3 gap-6">
@@ -297,7 +292,11 @@ function Footer() {
           <p className="eyebrow !text-gold-soft mb-4">Atelier</p>
           <p className="flex items-start gap-3 text-sm leading-relaxed">
             <MapPin className="size-4 mt-1 text-gold shrink-0" />
-            Karuna Road,<br />Westlands, Nairobi,<br />Kenya
+            Karuna Road,
+            <br />
+            Westlands, Nairobi,
+            <br />
+            Kenya
           </p>
         </div>
         <div>
