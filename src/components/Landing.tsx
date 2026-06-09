@@ -745,7 +745,7 @@ function ContactForm() {
   );
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("sending");
     setError(null);
@@ -965,7 +965,7 @@ function ContactItem({
   lines,
   href,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string;
   lines: string[];
   href?: string;
