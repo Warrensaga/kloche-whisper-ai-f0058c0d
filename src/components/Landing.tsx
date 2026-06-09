@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ComponentType, type FormEvent } from "react";
 import {
   ArrowUpRight,
   MapPin,
